@@ -1,3 +1,50 @@
+function animateWorm() {
+    const gameCanvas= document.getElementById("gameCanvas");
+    let x = 0;
+    let y = 0;
+    let opacity = 1;
+    let phase = 0;
+    let animId;
+
+    function doAnimation() {
+
+        if (phase == 0) {
+            x++;
+            y++;
+
+            worm.style.left = x + 'px';
+            worm.style.top = y + 'px'
+
+            if (x >=300) {
+                phase = 1;
+            }
+        }
+        else if (phase == 1) {
+        x --;
+        worm.style.left = x + 'px';
+        if (x <=20) {
+            phase = 2;
+        }
+    }
+    else if (phase == 2) {
+        x++;
+        y += 0.5;
+        worm.style.left = x + 'px';
+        worm.style.top = y + 'px';
+        if (x >= 550) {
+            phase = 3;
+            clearInterval(animId);
+        }
+    }
+
+    } 
+    worm.classList.remove("hidden");
+
+    animId = setInterval(doAnimation, 10) 
+    // animate worms 
+}   document.getElementById("startGame").addEventListener("click" , animateWorm);
+
+
 function startGame() {
     var audio = document.getElementById('gameMusic');
     var gameSounds = document.getElementById('gameSounds');
@@ -7,10 +54,12 @@ function startGame() {
     if(audio.paused) {
         audio.play();
         audio
+
+        player();
+        animateWorm();
     }
     
 }
-
 
 document.getElementById('startGame').addEventListener("click" , startGame);
 
@@ -67,12 +116,14 @@ function player() {
     // initialise canvas and game elements
     function init() {
         console.log("init");
-        canvas = document.getElementById('ex3canvas');
+        canvas = document.getElementById('gameCanvas');
         ctx = canvas.getContext('2d');
 
         character = Character(
             characterSpriteSheet,
             [64, 64],
+
+        
 
             [ // main character set
                 [ // walk up track
@@ -91,6 +142,7 @@ function player() {
 
             1
         );
+        
         character.init();
 
         document.addEventListener("keydown", doKeyDown);
@@ -273,6 +325,9 @@ function player() {
                         if (isKeydown) this.action("moveRight");
                         else this.action("noMoveHorizontal");
                         break;
+                        case "":
+                        if(isKeydown) this.action("catchWorm");
+                        break;
                     default:
                         if (!isKeydown) this.action("stop");
                         break;
@@ -283,6 +338,9 @@ function player() {
     }
 }
 
+function worm() {
+
+}
     
 
 

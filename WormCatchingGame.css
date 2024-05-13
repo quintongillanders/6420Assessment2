@@ -66,3 +66,16 @@ margin-left: 200px;
 z-index: 1;
 font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
+
+
+#worm {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    margin-top: -330px;
+    margin-left: 200px;
+    z-index: 1;
+    border-radius: 50%;
+    background-color: sandybrown;
+    display: none;
+}
