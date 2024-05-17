@@ -1,62 +1,49 @@
-function animateWorm() {
-    const gameCanvas= document.getElementById("gameCanvas");
-    let x = 0;
-    let y = 0;
-    let opacity = 1;
-    let phase = 0;
-    let animId;
+var timer;
+var timeLeft = 60; // 1 minute
+var timeUp = document.getElementById('timeUp');
 
-    function doAnimation() {
+//when the timer runs out
+function gameOver() {
+    var gameOver = document.getElementById('gameOver');
+    gameMusic.pause();
+    
+        gameOver.currentTime = 0;
+    //play sound
+            gameOver.play();
 
-        if (phase == 0) {
-            x++;
-            y++;
+        clearInterval(timer); // stop the timer
 
-            worm.style.left = x + 'px';
-            worm.style.top = y + 'px'
-
-            if (x >=300) {
-                phase = 1;
-            }
-        }
-        else if (phase == 1) {
-        x --;
-        worm.style.left = x + 'px';
-        if (x <=20) {
-            phase = 2;
-        }
+        // show the time up message once the timer has ended. 
+        timeUp.style.display = 'block';
     }
-    else if (phase == 2) {
-        x++;
-        y += 0.5;
-        worm.style.left = x + 'px';
-        worm.style.top = y + 'px';
-        if (x >= 550) {
-            phase = 3;
-            clearInterval(animId);
-        }
+    
+function updateTimer() {
+    timeLeft = timeLeft -1;
+    if(timeLeft >= 0)
+        $('#timer').html(timeLeft);
+     else {
+        gameOver();
     }
-
-    } 
-    worm.classList.remove("hidden");
-
-    animId = setInterval(doAnimation, 10) 
-    // animate worms 
-}   document.getElementById("startGame").addEventListener("click" , animateWorm);
+}
 
 
 function startGame() {
     var audio = document.getElementById('gameMusic');
-    var gameSounds = document.getElementById('gameSounds');
+
+    audio.volume = 0.5; // game music volume 
     
-    audio.currentTime = 0;
+    gameMusic.currentTime = 0;
+    
     //play sound
     if(audio.paused) {
         audio.play();
         audio
-
+        timer = setInterval(updateTimer, 1000);
+        timeUp.style.hide = 'block';
         player();
-        animateWorm();
+        draw();
+        drawWorm();
+        updateTimer();
     }
     
 }
@@ -66,9 +53,49 @@ document.getElementById('startGame').addEventListener("click" , startGame);
 function restartGame() {
     var audio = document.getElementById('gameMusic');
    audio.pause("SunshineBliss.mp3");
+    timeUp.style.display = 'none';
+   // reset the timer when the restart button is clicked
+   clearInterval(timer);
+   timeLeft = 60; // reset timer to 1 minute
+
+   
 }
 
 document.getElementById('restartGame').addEventListener("click", restartGame);
+document.getElementById('startGame').addEventListener("click" , startGame);
+
+function wormMiss() {
+    var audio = document.getElementById("missWorm");
+    audio.play();
+    audio
+}
+
+function wormCaught() {
+    var audio = document.getElementById("wormCaught");
+    audio.play();
+    audio
+}
+
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage()
+    
+
+}
+function drawWorm() {
+    var canvas = document.getElementById('gameCanvas');
+    var ctx = canvas.getContext('2d');
+
+    ctx.beginPath();
+    ctx.arc(300, 400, 100, 0, Math.PI, true);
+    ctx.StrokeStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.fillStyle = 'sandybrown';
+    ctx.fill();
+    ctx.stroke();
+    
+}
 
 
 function player() {
@@ -254,6 +281,9 @@ function player() {
                         this.direction[1] = 0;
                         this.animationFrame = 0;
                         break;
+                    case "catchWorm":
+                        this.animationTrack = 3;
+                        this.animationFrame = 0;
                     default:
                         this.direction = [0, 0];
                         break;
@@ -282,6 +312,9 @@ function player() {
                 // it has been since the last position update.
                 this.position[0] += this.direction[0] * tick;
                 this.position[1] += this.direction[1] * tick;
+                
+                
+                
             },
 
             // Draw character elements using the passed context (canvas).
@@ -309,24 +342,31 @@ function player() {
             // Param: isKeyDown = boolean, true = key pressed, false = key released
             doKeyInput(e, isKeydown = true) {
                 switch (e) {
-                    case "w":
+                    case "w": // move up
                         if (isKeydown) this.action("moveUp");
                         else this.action("noMoveVertical");
                         break;
-                    case "a":
+                    case "a": // move right
                         if (isKeydown) this.action("moveLeft");
                         else this.action("noMoveHorizontal");
                         break;
-                    case "s":
+                    case "s": // move down
                         if (isKeydown) this.action("moveDown");
                         else this.action("noMoveVertical");
                         break;
-                    case "d":
+                    case "d": // move left
                         if (isKeydown) this.action("moveRight");
                         else this.action("noMoveHorizontal");
                         break;
-                        case "":
-                        if(isKeydown) this.action("catchWorm");
+                        case "": // space bar to catch the worms
+                        if(isKeydown) {
+                            if (wormClose()) {
+                            this.action("catchWorm");
+                                wormCaught();
+                            } else {
+                                wormMiss();
+                            }
+                        }
                         break;
                     default:
                         if (!isKeydown) this.action("stop");
@@ -338,9 +378,7 @@ function player() {
     }
 }
 
-function worm() {
 
-}
     
 
 
