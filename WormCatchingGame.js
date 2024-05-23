@@ -15,6 +15,7 @@ function gameOver() {
 
         // show the time up message once the timer has ended. 
         timeUp.style.display = 'block';
+        document.getElementById("restartGame").style.display = 'block'; // this will show the restart button at the end of the game. 
     }
     
 function updateTimer() {
@@ -40,9 +41,9 @@ function startGame() {
         audio
         timer = setInterval(updateTimer, 1000);
         timeUp.style.hide = 'block';
+        document.getElementById("startGame").style.display = 'none';
+
         player();
-        draw();
-        drawWorm();
         updateTimer();
     }
     
@@ -54,15 +55,19 @@ function restartGame() {
     var audio = document.getElementById('gameMusic');
    audio.pause("SunshineBliss.mp3");
     timeUp.style.display = 'none';
+    document.getElementById("restartGame").style.display = 'none';
+    
    // reset the timer when the restart button is clicked
    clearInterval(timer);
    timeLeft = 60; // reset timer to 1 minute
-
+    startGame();
    
 }
 
+
+
 document.getElementById('restartGame').addEventListener("click", restartGame);
-document.getElementById('startGame').addEventListener("click" , startGame);
+
 
 function wormMiss() {
     var audio = document.getElementById("missWorm");
@@ -77,25 +82,8 @@ function wormCaught() {
 }
 
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage()
-    
 
-}
-function drawWorm() {
-    var canvas = document.getElementById('gameCanvas');
-    var ctx = canvas.getContext('2d');
 
-    ctx.beginPath();
-    ctx.arc(300, 400, 100, 0, Math.PI, true);
-    ctx.StrokeStyle = 'black';
-    ctx.lineWidth = 4;
-    ctx.fillStyle = 'sandybrown';
-    ctx.fill();
-    ctx.stroke();
-    
-}
 
 
 function player() {
@@ -145,6 +133,8 @@ function player() {
         console.log("init");
         canvas = document.getElementById('gameCanvas');
         ctx = canvas.getContext('2d');
+
+       
 
         character = Character(
             characterSpriteSheet,
@@ -313,9 +303,28 @@ function player() {
                 this.position[0] += this.direction[0] * tick;
                 this.position[1] += this.direction[1] * tick;
                 
-                
-                
-            },
+                // boundary checking
+                if (this.position[0] < 0) {
+                    this.position[0] = 0;
+                }
+
+                if (this.position[1] < 0) {
+                    this.position[1] = 0;
+                }
+
+                if (this.position[0] + this.spriteCanvasSize[0] > canvas.width) {
+                    this.position[0] = canvas.width - this.spriteCanvasSize[0];
+                }
+
+                if (this.position[1] + this.spriteCanvasSize[1] > canvas.height) {
+                    this.position[1] = canvas.height - this.spriteCanvasSize[1];
+                }
+
+             },
+            
+        
+           
+            
 
             // Draw character elements using the passed context (canvas).
             // Param: context = canvas 2D context.
@@ -379,7 +388,42 @@ function player() {
 }
 
 
-    
+// drawing the worms as semi circles
+class SemiCircle extends GameObject {
+    constructor(context, x, y, vx, vy, radius) {
+        super(context, x, y, vx, vy);
+
+        this.radius = radius;
+
+        this.draw= this.draw.bind(this);
+        this.update = this.update.bind(this);
+        this.setVelocity = this.setVelocity.bind(this);
+    }
+
+    draw(ctx) {
+        super.draw(ctx);
+        ctx.fillStyle = this.isColliding? '#ff8080' : '#0099b0';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, Math.PI, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    update(secondsPassed) {
+        super.update(secondsPassed);
+        this.x += this.vx * secondsPassed;
+        this.y += this.vy * secondsPassed;
+    }
+
+    setVelocity(vx, vy) {
+        this.vx = vx;
+        this.vy = vy;
+    }
+
+    offsetVelocity(vx, vy) {
+        this.vx += vx;
+        this.vy += vy;
+    }
+}
 
 
 
