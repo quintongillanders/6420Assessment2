@@ -112,6 +112,9 @@ function player() {
     // game objects
     let character;
 
+    // worms
+    let worms;
+
     // run when the website has finished loading
     $('document').ready(function () {
         console.log("ready");
@@ -155,12 +158,27 @@ function player() {
                 [ // walk right track 
                     [256, 64], [320, 64], [384, 64], [448, 64]
                 ],
+                [ // action track
+                [256, 0], [384, 128], [448, 128]
+                ]
             ],
 
             1
         );
         
         character.init();
+
+        worms = [];
+        for (let i = 0; i < 5; i++) {
+            worms[i] = new SemiCircle(
+                this,
+                i * 100,
+                i * 100,
+                0.05,
+                0.05,
+                20
+            );
+        }
 
         document.addEventListener("keydown", doKeyDown);
         document.addEventListener("keyup", doKeyUp);
@@ -181,11 +199,17 @@ function player() {
 
     function update() {
         character.update(tick);
+        for (let i = 0; i < worms.length; i++) {
+            worms[i].update(tick);
+        }
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(backgroundImage, 0, 0, 800, 800);
+        for (let i = 0; i < worms.length; i++) {
+            worms[i].draw(ctx);
+        }
         character.draw(ctx);
     }
 
@@ -239,7 +263,10 @@ function player() {
             action(action) {
                 console.log(`action: ${action}. Animation Frame ${this.animationFrame}`);
                 // ignore duplicate actions.
-                if (action === this.lastAction) return;
+                if (action == this.lastAction) {
+                    console.log(`repeated action: ${action}`);
+                    return;
+                } 
 
                 // Handle each action type as cases.
                 switch (action) {
@@ -272,8 +299,16 @@ function player() {
                         this.animationFrame = 0;
                         break;
                     case "catchWorm":
-                        this.animationTrack = 3;
+                        console.log("catch worm");
+                        this.animationTrack = 4;
                         this.animationFrame = 0;
+                        this.frameTime = 1000;
+                    case "noCatchWorm":
+                        console.log("stop catching worm");
+                        // action finished, possibly set animation frame to default of moveDown.
+                        this.animationFrame = 0;
+                        this.frameTime = 128;
+                        break;
                     default:
                         this.direction = [0, 0];
                         break;
@@ -293,7 +328,7 @@ function player() {
 
                     // update frame to next frame on the track. 
                     // Modulo wraps the frames from last frame to first.
-                    if (this.direction[0] !== 0 || this.direction[1] !== 0) {
+                    if (this.direction[0] !== 0 || this.direction[1] !== 0 || this.lastAction === "catchWorm") {
                         this.animationFrame = (this.animationFrame + 1) % this.spriteFrames[this.animationTrack].length;
                     }
                 }
@@ -367,15 +402,10 @@ function player() {
                         if (isKeydown) this.action("moveRight");
                         else this.action("noMoveHorizontal");
                         break;
-                        case "": // space bar to catch the worms
-                        if(isKeydown) {
-                            if (wormClose()) {
-                            this.action("catchWorm");
-                                wormCaught();
-                            } else {
-                                wormMiss();
-                            }
-                        }
+                    case " ": // space bar to catch the worms
+                        if(isKeydown) this.action("catchWorm");
+                        else this.action("noCatchWorm");
+                        
                         break;
                     default:
                         if (!isKeydown) this.action("stop");
@@ -387,6 +417,37 @@ function player() {
     }
 }
 
+class GameObject
+{
+    constructor (context, x, y, vx, vy, width, height){
+        this.context = context;
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.width = width;
+        this.height = height;
+
+        this.isColliding = false;
+
+        this.draw = this.draw.bind(this);
+        this.update = this.update.bind(this);
+        this.getRight = this.getRight.bind(this);
+        this.getBottom = this.getBottom.bind(this);
+        this.setVelocity = this.setVelocity.bind(this);
+        this.offsetVelocity = this.offsetVelocity.bind(this);
+    }
+    getRight(){
+        return (this.x + this.width);
+    }
+
+    getBottom(){
+        return (this.y + this.height);
+    }
+
+    draw(context){};
+    update(secondsPassed){};
+}
 
 // drawing the worms as semi circles
 class SemiCircle extends GameObject {
