@@ -1,13 +1,25 @@
 var timer; // timer variable 
-var timeLeft = 60; // 1 minute
+var timeLeft = 60; // updates the remaining time
 var timeUp = document.getElementById('timeUp'); // this will display the time up message when the time runs out 
 var score = 0; // player score count
-var canvas; 
-var width;
-var height;
-var ctx;
+var canvas = document.getElementById('gameCanvas');
+canvas.width = 800;
+canvas.height = 800;
+var ctx = canvas.getContext('2d');
+var worms = []; // array for worm 
+var radius;
+var minRadius;
+var maxRadius;
+var position;
+var caught;
 
-function updateScore() {
+
+function setTimer() {
+    document.getElementById("setTimer").style.display = "block";
+}
+
+// updates the score by 1 every time the worm is caught
+function updateScore() { 
     $('#score').html(score);
 }
 
@@ -36,14 +48,19 @@ function gameOver() {
 
         clearInterval(timer); // stop the timer
         character = null; // despawn the character when the time runs out
-        worms = []; // despawn the worms when the time runs out
 
         // show the time up message once the timer has ended. 
         timeUp.style.display = 'block';
         document.getElementById("restartGame").style.display = 'block'; // this will show the restart button at the end of the game. 
         updateScore();
-    }
+        setTimeout(function() {
+            location.reload();
+        }, 3000);
+
+        }
     
+
+    // this will display the "time up" message when the time runs out
 function updateTimer() {
     timeLeft = timeLeft -1;
     if(timeLeft >= 0)
@@ -53,7 +70,7 @@ function updateTimer() {
     }
 }
 
-
+// button to start the game and begin playing 
 function startGame() {
     var audio = document.getElementById('gameMusic');
     
@@ -69,11 +86,12 @@ function startGame() {
         timer = setInterval(updateTimer, 1000);
         timeUp.style.hide = 'block';
         document.getElementById("startGame").style.display = 'none';
-
+        document.getElementById("setTimer").style.display = 'none';
+        worms = [];
         player();
         updateTimer();
        createWorms();
-      
+      wormSpawnInterval = setInterval(createWorms, 2000);
         
     }
     
@@ -81,37 +99,7 @@ function startGame() {
 
 document.getElementById('startGame').addEventListener("click" , startGame);
 
-function restartGame() {
-    var audio = document.getElementById('gameMusic');
-    audio.volume = 0.2; // game music volume 
-    
-    gameMusic.currentTime = 0;
-    
-    //play sound
-    if(audio.paused) {
-        audio.play();
-        audio
-        timeUp.style.hide = 'block';
-        document.getElementById("restartGame").style.display = 'none';
-        document.getElementById("timeUp").style.display = 'none';
-        clearInterval(timer);
-        timer = setInterval(updateTimer, 1000);
-        score = 0; // reset score to 0 
-        timeLeft = 60; // reset time to 1 minute
-        player();
-       createWorms();
-       updateScore();
-       startGame();
-        
-    }
-    
-}
-
-
-
-document.getElementById('restartGame').addEventListener("click", restartGame);
-
-
+// this audio will play when the player attempts to catch a worm but there is no worm nearby
 function wormMiss() {
     var audio = document.getElementById("missWorm");
     audio.play();
@@ -119,6 +107,7 @@ function wormMiss() {
     audio.volume = 0.5;
 }
 
+// a success sound will play when a worm is caught and the score will increase by 1
 function wormCaught() {
     var audio = document.getElementById("wormCaught");
     audio.pause();
@@ -130,6 +119,7 @@ function wormCaught() {
     updateScore();
 }
 
+// spawns in the character, map, and worms
 function player() {
     // Character Sprite sheet image from https://opengameart.org/content/base-character-spritesheet-16x16
     const characterSpriteSheet = new Image();
@@ -175,7 +165,6 @@ function player() {
         }
     }
 
-    
 
     // initialise canvas and game elements
     function init() {
@@ -183,13 +172,9 @@ function player() {
         canvas = document.getElementById('gameCanvas');
         ctx = canvas.getContext('2d');
 
-       
-
         character = Character(
             characterSpriteSheet,
             [64, 64],
-
-        
 
             [ // main character set
                 [ // walk up track
@@ -232,7 +217,7 @@ function player() {
 
         document.addEventListener("keydown", doKeyDown);
         document.addEventListener("keyup", doKeyUp);
-
+        
         window.requestAnimationFrame(run);
     }
 
@@ -466,13 +451,13 @@ function player() {
 
                             }
                         }
-                        catchWorm();
+                        
                     } else {
                         
                         this.action("noCatchWorm");
+                            break;
                         
-                           
-                        } 
+                    }
                         break;
                     default:
                         if (!isKeydown) this.action("stop");
@@ -518,11 +503,13 @@ class GameObject
 
 // drawing the worms as semi circles
 class SemiCircle extends GameObject {
-    constructor(context, x, y, vx, vy, radius) {
+    constructor(context, x, y, vx, vy, radius, growthRate) {
         super(context, x, y, vx, vy);
 
         this.radius = radius;
-
+        this.growthRate = growthRate;
+        this.minRadius = 10;
+        this.maxRadius = 40;
         this.draw= this.draw.bind(this);
         this.update = this.update.bind(this);
         this.setVelocity = this.setVelocity.bind(this);
@@ -555,6 +542,9 @@ class SemiCircle extends GameObject {
 
         this.x += this.vx * secondsPassed;
         this.y += this.vy * secondsPassed;
+
+        
+
     }
 
     isPointInside(x, y) {
@@ -562,8 +552,6 @@ class SemiCircle extends GameObject {
         return distance <= this.radius;
     }
         
-    
-
     setVelocity(vx, vy) {
         this.vx = vx;
         this.vy = vy;
@@ -575,21 +563,30 @@ class SemiCircle extends GameObject {
     }
 }
 
-// creating the worms again 
+// creating the worms  
 function createWorms() {
-  
-    
-    worms = [];
-    for (let i = 0; i < 300; i++) {
-        worms.push(new SemiCircle(
-            ctx,
-            Math.random() * canvas.width,
-            Math.random() * canvas.height, 
-            (Math.random() * 0.2 - 0.1),
-            (Math.random() * 0.2 - 0.1), 
-            20
-        ));
-    }
+    console.log("spawning worm")
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+
+    const vx = (Math.random() - 0.5) * 0.2;
+    const vy = (Math.random() - 0.5) * 0.2;
+
+    const radius = Math.random() * (maxRadius - minRadius) + minRadius;
+
+    let worm = new SemiCircle(x, y, vx, vy, radius);
+    worms.push(worm);
 }
 
-createWorms();
+
+document.addEventListener('DOMContentLoaded', function () {
+    const timeLimitDropdown = document.getElementById('timeLimit');
+
+    timeLimitDropdown.addEventListener('change', function () {
+        const selectedTime = parseInt(timeLimitDropdown.value);
+        timeLeft = selectedTime;
+        $('#timer').html(timeLeft);
+
+    });
+});
+
