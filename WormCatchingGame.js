@@ -1,6 +1,6 @@
 var timer; // timer variable 
 var wormSpawnInterval; // timer for spawning worms during gameplay
-var timeLeft = 60; // updates the remaining time
+var timeLeft = 60; // default time
 var timeUp = document.getElementById('timeUp'); // this will display the time up message when the time runs out 
 var score = 0; // player score count
 var canvas = document.getElementById('gameCanvas');
@@ -9,14 +9,15 @@ canvas.height = 800;
 var ctx = canvas.getContext('2d');
 var worms = []; // array for worm 
 var maxWorms = 20;
-var wormsPerSpawn = 3;
-var growthRate = 1; // new variable for setting speed of growth. Probably set too high, needs adjustment.
+var wormsPerSpawn = 5;
+var growthRate = 0.1; // increases the speed of the growth rate of the worm, shrinking and growing in size
 var radius;
 var minRadius = 2;
 var maxRadius = 25;
 var position;
 var caught;
 var gradient;
+document.getElementById("gameCanvas").style.display = 'none';
 
 
 function setTimer() {
@@ -44,7 +45,6 @@ function catchWorm() {
 //when the timer runs out
 function gameOver() {
     var gameOver = document.getElementById('gameOver');
-    var finalScore = document.getElementById('score').innerText;
     gameMusic.pause();
 
     gameOver.currentTime = 0;
@@ -57,7 +57,7 @@ function gameOver() {
 
     // show the time up message once the timer has ended. 
     timeUp.style.display = 'block';
-    document.getElementById("restartGame").style.display = 'block'; // this will show the restart button at the end of the game. 
+    document.getElementById("gameCanvas").style.display = 'none';
     updateScore();
     setTimeout(function () {
         location.reload();
@@ -93,6 +93,7 @@ function startGame() {
         timeUp.style.hide = 'block';
         document.getElementById("startGame").style.display = 'none';
         document.getElementById("setTimer").style.display = 'none';
+        document.getElementById("gameCanvas").style.display = 'block';
         worms = [];
         player();
         updateTimer();
@@ -104,7 +105,7 @@ function startGame() {
                 }
                 createWorms();
             }
-        }, 2000);
+        }, 1000); // every second, 5 worms will spawn 
 
     }
 
@@ -112,13 +113,6 @@ function startGame() {
 
 document.getElementById('startGame').addEventListener("click", startGame);
 
-// this audio will play when the player attempts to catch a worm but there is no worm nearby
-function wormMiss() {
-    var audio = document.getElementById("missWorm");
-    audio.play();
-    audio
-    audio.volume = 0.5;
-}
 
 // a success sound will play when a worm is caught and the score will increase by 1
 function wormCaught() {
@@ -601,7 +595,8 @@ function createWorms() {
     let x = Math.random() * canvas.width;
     let y = Math.random() * canvas.height;
 
-    let vx = (Math.random() - 0.5) * 0.2;
+    // worm speed
+    let vx = (Math.random() - 0.5) * 0.2; 
     let vy = (Math.random() - 0.5) * 0.2;
 
     let worm = new SemiCircle(ctx, x, y, vx, vy, minRadius, growthRate);
@@ -620,4 +615,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
     });
 });
-
